@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import ElasticNet
 import mlflow
 import mlflow.sklearn
+from pathlib import Path
 
 logging.basicConfig(level=logging.WARN)
 logger = logging.getLogger(__name__)
@@ -30,14 +31,11 @@ if __name__ == "__main__":
     warnings.filterwarnings("ignore")
     np.random.seed(40)
 
-    # Read the wine-quality csv file from local
-    data = pd.read_csv("data/red-wine-quality.csv")
-    #data.to_csv("data/red-wine-quality.csv", index=False)
+    # Read the wine-quality csv file from the URL
+    data = pd.read_csv("red-wine-quality.csv")
 
     # Split the data into training and test sets. (0.75, 0.25) split.
     train, test = train_test_split(data)
-    train.to_csv("data/train.csv", index=False)
-    test.to_csv("data/test.csv", index=False)
 
     # The predicted column is "quality" which is a scalar from [3, 9]
     train_x = train.drop(["quality"], axis=1)
@@ -48,29 +46,24 @@ if __name__ == "__main__":
     alpha = args.alpha
     l1_ratio = args.l1_ratio
 
-    mlflow.set_tracking_uri("sqlite:///mlflow.db")  # backend store: params/metrics/tags
+    mlflow.set_tracking_uri(uri="")
 
-    experiment_name = "experment_2"
-    if mlflow.get_experiment_by_name(experiment_name) is None:
-        mlflow.create_experiment(
-            experiment_name,
-            artifact_location="./mlruns",  # artifact store: models/files
-            tags={"version": "1.0", "type": "regression"},
-        )
-
-    exp_id = mlflow.get_experiment_by_name(experiment_name).experiment_id
+    print("The set tracking uri is ", mlflow.get_tracking_uri())
+    exp_id = mlflow.create_experiment(
+        name="exp_create_exp_artifact",
+        tags={"version": "v1", "priority": "p1"},
+        artifact_location=Path.cwd().joinpath("myartifacts").as_uri()
+    )
     get_exp = mlflow.get_experiment(exp_id)
-    
+
     print("Name: {}".format(get_exp.name))
     print("Experiment_id: {}".format(get_exp.experiment_id))
     print("Artifact Location: {}".format(get_exp.artifact_location))
     print("Tags: {}".format(get_exp.tags))
     print("Lifecycle_stage: {}".format(get_exp.lifecycle_stage))
     print("Creation timestamp: {}".format(get_exp.creation_time))
-    
-    exp = mlflow.set_experiment(experiment_name)
 
-    with mlflow.start_run(experiment_id=exp.experiment_id) as run:
+    with mlflow.start_run(experiment_id=exp_id):
         lr = ElasticNet(alpha=alpha, l1_ratio=l1_ratio, random_state=42)
         lr.fit(train_x, train_y)
 
@@ -83,23 +76,9 @@ if __name__ == "__main__":
         print("  MAE: %s" % mae)
         print("  R2: %s" % r2)
 
-        """mlflow.log_param("alpha", alpha)
+        mlflow.log_param("alpha", alpha)
         mlflow.log_param("l1_ratio", l1_ratio)
-        
         mlflow.log_metric("rmse", rmse)
         mlflow.log_metric("r2", r2)
         mlflow.log_metric("mae", mae)
-        """
-
-        mlflow.log_params({"alpha": alpha, "l1_ratio": l1_ratio})
-        mlflow.log_metrics({"rmse": rmse, "r2": r2, "mae": mae})
-
-        mlflow.log_artifacts("data/")
-        # mlflow.log_artifact("data/red-wine-quality.csv")
-
-        mlflow.sklearn.log_model(lr, name="mymodel")
-        run = mlflow.active_run()
-        print("Active run_id: {}".format(run.info.run_id))
-
-    latest_run = mlflow.search_runs(experiment_ids=exp.experiment_id).iloc[0]
-    print("Latest run_id: {}".format(latest_run.run_id))
+        mlflow.sklearn.log_model(lr, "mymodel")

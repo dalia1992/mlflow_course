@@ -98,8 +98,11 @@ if __name__ == "__main__":
         # mlflow.log_artifact("data/red-wine-quality.csv")
 
         mlflow.sklearn.log_model(lr, name="mymodel")
+
         run = mlflow.active_run()
         print("Active run_id: {}".format(run.info.run_id))
+
+        print("Artifact URI: {}".format(mlflow.get_artifact_uri()))
 
     latest_run = mlflow.search_runs(experiment_ids=exp.experiment_id).iloc[0]
     print("Latest run_id: {}".format(latest_run.run_id))

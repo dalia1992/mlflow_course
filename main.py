@@ -45,7 +45,16 @@ if __name__ == "__main__":
 
     alpha = args.alpha
     l1_ratio = args.l1_ratio
-    exp = mlflow.set_experiment(experiment_name="experment_1")
+
+    mlflow.set_tracking_uri("sqlite:///mlflow.db")  # backend store: params/metrics/tags
+
+    experiment_name = "experment_1"
+    if mlflow.get_experiment_by_name(experiment_name) is None:
+        mlflow.create_experiment(
+            experiment_name,
+            artifact_location="./mlruns",  # artifact store: models/files
+        )
+    exp = mlflow.set_experiment(experiment_name)
 
     with mlflow.start_run(experiment_id=exp.experiment_id):
         lr = ElasticNet(alpha=alpha, l1_ratio=l1_ratio, random_state=42)

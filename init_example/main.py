@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
     mlflow.set_tracking_uri("sqlite:///mlflow.db")  # backend store: params/metrics/tags
 
-    experiment_name = "experment_2"
+    experiment_name = "experiment_4"
     if mlflow.get_experiment_by_name(experiment_name) is None:
         mlflow.create_experiment(
             experiment_name,
@@ -71,6 +71,7 @@ if __name__ == "__main__":
     exp = mlflow.set_experiment(experiment_name)
 
     with mlflow.start_run(experiment_id=exp.experiment_id) as run:
+        mlflow.set_tag("release_version", "0.1")
         lr = ElasticNet(alpha=alpha, l1_ratio=l1_ratio, random_state=42)
         lr.fit(train_x, train_y)
 
